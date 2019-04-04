@@ -1,0 +1,7 @@
+.kitchen
+.kitchen/*
+Berksfile.lock
+*~
+cookbooks/*
+cookbooks
+nohup.out

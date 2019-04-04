@@ -1,0 +1,46 @@
+#!/usr/bin/env sh 
+
+SKIP_GRANTS=
+SKIP_WAIT=0
+if [ $# -gt 0 ] ; then
+    if [ "$1" = "-f" ] ; then
+	pkill -9 mysqld
+    elif [ "$1" = "--skip-grant-tables" ] ; then
+	SKIP_GRANTS="--skip-grant-tables"
+    elif [ "$1" = "--skip-ndb-wait" ] ; then
+	SKIP_WAIT=1
+    else
+	echo "usage: $0 [-f|--skip-grant-tables|--skip-ndb-wait]"
+	exit 2
+    fi
+fi
+
+
+
+echo "Testing if a mysql server is already running on this host..."
+
+MYSQL_SOCKET=$(<%= node['ndb']['base_dir'] %>/scripts/get-mysql-socket.sh)
+<%= node['mysql']['base_dir'] %>/bin/mysqladmin -S "$MYSQL_SOCKET" -s -u root ping 
+# Don't redirect error, as this will give a '0' return result &> /dev/null
+if [ $? -eq 0 ] ; then
+ echo "A MySQL Server is already running at socket. Not starting another MySQL Server at this socket. Use '--force' to kill existing mysql servers at this node."
+ exit 1
+fi
+
+# If there is a stray lock file lying around (and the mysqld is not listening on the socket), remove it.
+rm -f /tmp/mysql.sock.lock 
+
+export MYSQL_HOME=<%= node['ndb']['root_dir'] %>
+
+if [ $SKIP_WAIT -ne 1 ] ; then
+  <%= node['mysql']['base_dir'] %>/bin/ndb_waiter -c <%= node['ndb']['connectstring'] %> --timeout=<%= node['ndb']['wait_startup'] %>  2>&1 > /dev/null
+fi
+
+<% if #{node['ndb']['use_systemd']} == "true" then -%>
+  <%= node['mysql']['base_dir'] %>/bin/mysqld --defaults-file=<%= node['ndb']['root_dir'] %>/my.cnf $SKIP_GRANTS > <%= node['ndb']['log_dir'] %>/mysql_<%= @node_id %>_out.log  2>&1 < /dev/null &
+<% else -%>
+  su <%= node['ndb']['user'] %> -c "<%= node['mysql']['base_dir'] %>/bin/mysqld --defaults-file=<%= node['ndb']['root_dir'] %>/my.cnf $SKIP_GRANTS > <%= node['ndb']['log_dir'] %>/mysql_<%= @node_id %>_out.log  2>&1 < /dev/null &"
+<% end -%>
+
+exit $?
+

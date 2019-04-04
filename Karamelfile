@@ -1,0 +1,23 @@
+dependencies: 
+  - recipe: ndb::install
+    global:  
+      - kagent::install
+  - recipe: ndb::mgmd
+    global:  
+      - kagent::install
+  - recipe: ndb::ndbd
+    global:  
+      - ndb::mgmd
+  - recipe: ndb::mysqld
+    global:  
+      - ndb::mgmd
+      - ndb::ndbd
+  - recipe: ndb::memcached
+    global:  
+      - ndb::mysqld
+  - recipe: ndb::bench
+    global:  
+      - ndb::mysqld
+  - recipe: ndb::_test
+    global:  
+      - ndb::mysqld

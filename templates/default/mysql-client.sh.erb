@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+
+EXECUTE_SQL=""
+DB=
+MYSQL_CONF=<%= node['ndb']['root_dir'] %>/my.cnf
+# Either a 'db' will be passed as an argument, or not:
+# Case 1:
+# mysql -u root -pPasswd mysql -e "show tables"
+# Case 2:
+# mysql -u root -pPasswd -e "show databases"
+# Case 3 (to log into the shell):
+# mysql -u root -pPasswd 
+
+if [ $# -gt 1 ] ; then
+    EXECUTE_SQL="-e"
+# Case 1
+    if [ "$2" = "-e" ] ; then
+	DB=$1
+	shift  # remove 'db'
+# Case 2
+    fi
+    shift # remove '-e'
+fi
+
+MYSQL_SOCKET=$(<%= node['ndb']['scripts_dir'] %>/get-mysql-socket.sh)
+echo "Using socket: $MYSQL_SOCKET"
+ if [ "$EXECUTE_SQL" = "-e" ] ; then
+     <%= node['mysql']['base_dir'] %>/bin/mysql --defaults-file=$MYSQL_CONF -u root  $DB $EXECUTE_SQL "$@"
+ else
+  # Case 3
+    <%= node['mysql']['base_dir'] %>/bin/mysql --defaults-file=$MYSQL_CONF -u root $DB $@
+ fi
+exit $?
