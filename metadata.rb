@@ -1,12 +1,12 @@
 name             "ndb"
 maintainer       "Jim Dowling"
 maintainer_email "jdowling@kth.se"
-license          "GPL 2.0"
+license          "AGPL v3"
 description      "Installs/Configures NDB (MySQL Cluster)"
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
-version          "0.9.0"
-source_url       "https://github.com/hopshadoop/ndb-chef"
-issues_url       "https://github.com/hopshadoop/ndb-chef/issues"
+version          "1.0.0"
+source_url       "https://github.com/logicalclocks/ndb-chef"
+issues_url       "https://github.com/logicalclocks/ndb-chef/issues"
 
 depends           "kagent"
 depends           "ulimit"
@@ -16,15 +16,9 @@ recipe            "ndb::install", "Installs MySQL Cluster binaries"
 recipe            "ndb::mgmd", "Installs a MySQL Cluster management server (ndb_mgmd)"
 recipe            "ndb::ndbd", "Installs a MySQL Cluster data node (ndbd)"
 recipe            "ndb::mysqld", "Installs a MySQL Server connected to the MySQL Cluster (mysqld)"
-recipe            "ndb::memcached", "Installs a memcached Server connected to the MySQL Cluster (memcached)"
-
-recipe            "ndb::mgmd-purge", "Removes a MySQL Cluster management server (ndb_mgmd)"
-recipe            "ndb::ndbd-purge", "Removes a MySQL Cluster data node (ndbd)"
-recipe            "ndb::mysqld-purge", "Removes a MySQL Server connected to the MySQL Cluster (mysqld)"
-recipe            "ndb::memcached-purge", "Removes a memcached Server connected to the MySQL Cluster (memcached)"
+recipe            "ndb::mysqld_tls", "Configure TLS for MySQL servers using host certificates"
 
 recipe            "ndb::purge", "Removes all data and all binaries related to a MySQL Cluster installation"
-recipe            "ndb::_test", "A unit-test used for testing this cookbook"
 
 supports 'ubuntu', ">= 14.04"
 supports 'rhel',   ">= 7.0"
@@ -46,14 +40,6 @@ attribute "ndb/DataMemory",
           :description => "Data memory for each MySQL Cluster Data Node",
           :type => 'string',
           :required => "required"
-
-attribute "ndb/IndexMemory",
-          :description => "Index memory for each MySQL Cluster Data Node",
-          :type => 'string'
-
-attribute "memcached/mem_size",
-          :description => "Memcached data memory size",
-          :type => 'string'
 
 attribute "ndb/version",
           :description =>  "MySQL Cluster Version",
@@ -99,6 +85,18 @@ attribute "ndb/DiskPageBufferEntries",
           :description => "Number of page entries (page references) to allocate.",
           :type => 'string'
 
+attribute "ndb/DiskIOThreadPool",
+          :description => "Default is (2). Increase for higher throughput.",
+          :type => 'string'
+
+attribute "ndb/SharedGlobalMemory",
+          :description => "Default is 128M, increase to 512M for higher throughput.",
+          :type => 'string'
+
+attribute "ndb/DiskPageBufferMemory",
+          :description => "Default is 64M, increase to 512M for higher throughput.",
+          :type => 'string'
+
 attribute "mysql/user",
           :description => "User that runs mysql server",
           :required => "required",
@@ -108,6 +106,10 @@ attribute "mysql/password",
           :description => "Password for hop mysql user",
           :required => "required",
           :type => 'string'
+
+attribute "mysql/initialize",
+          :description => "Initialize the MySQL Servers (Default: true)",
+          :type => "string"
 
 attribute "mysql/dir",
           :description => "Directory in which to install MySQL Binaries",
@@ -119,6 +121,10 @@ attribute "mysql/localhost",
 
 attribute "mysql/replication_enabled",
           :description => "Enable replication for the mysql server",
+          :type => 'string'
+
+attribute "mysql/tls",
+          :description => "Enable TLS/SSL for the mysql server",
           :type => 'string'
 
 attribute "ndb/wait_startup",
@@ -205,6 +211,26 @@ attribute "ndb/LongMessageBuffer",
           :description => "LongMessageBuffer",
           :type => 'string'
 
+attribute "ndb/MaxFKBuildBatchSize",
+          :description => "MaxFKBuildBatchSize",
+          :type => 'string'
+
+attribute "ndb/MaxReorgBuildBatchSize",
+          :description => "MaxReorgBuildBatchSize",
+          :type => 'string'
+
+attribute "ndb/EnablePartialLcp",
+          :description => "EnablePartialLcp",
+          :type => 'string'
+
+attribute "ndb/RecoveryWork",
+          :description => "RecoveryWork",
+          :type => 'string'
+
+attribute "ndb/InsertRecoveryWork",
+          :description => "InsertRecoveryWork",
+          :type => 'string'
+
 attribute "ndb/TransactionInactiveTimeout",
           :description => "TransactionInactiveTimeout",
           :type => 'string'
@@ -279,7 +305,7 @@ attribute "ndb/NoOfFragmentLogParts",
           :type => 'string'
 
 attribute "ndb/NoOfFragmentLogFiles",
-          :description =>  "Number of fragment logfiles for writing LCPS.", 
+          :description =>  "Number of fragment logfiles for writing LCPS.",
           :type => 'string'
 
 attribute "ndb/bind_cpus",
@@ -318,15 +344,9 @@ attribute "ndb/backup_time",
           :description =>  "Time in 24-hour clock of when to make the regular backup. Default: 03:00 (in the morning)",
           :type => 'string'
 
-
-attribute "ndb/systemd",
-          :description =>  "Use systemd scripts (instead of system-v). Default is 'true'.",
-          :type => 'string'
-
 attribute "ndb/MaxNoOfConcurrentTransactions",
           :description =>  "Maximum number of concurrent transactions (higher consumes more memory)",
           :type => 'string'
-
 
 attribute "ndb/mgmd/private_ips",
           :description =>  "Ips for ndb_mgmds",
@@ -348,48 +368,62 @@ attribute "ndb/mysqld/ips_ids",
           :description =>  "The format should be ['ip1:id1', 'ip2:id2', ...] for the mysql section in the config.ini file. If no value is supplied, one will be assigned by default.",
           :type => 'array'
 
-attribute "ndb/MaxNoOfExecutionThreads",
-          :description => "Number of execution threads for MySQL Cluster",
-          :type => 'string'
-
-attribute "ndb/DataMemory",
-          :description => "Data memory for each MySQL Cluster Data Node",
-          :type => 'string',
-          :required => "required"
-
-attribute "ndb/IndexMemory",
-          :description => "Index memory for each MySQL Cluster Data Node",
-          :type => 'string'
-
 attribute "ndb/EnableRedoControl",
           :description => "Control disk read/write speeds automatically for LCPs (default '1', to turn off - set to '0'",
           :type => 'string'
 
-attribute "install/dir",
-          :description => "Set to a base directory under which we will install.",
+attribute "ndb/mgmd/private_ips_domainIds",
+          :description => "private_ips to LocationDomainIds for ndb_mgmds",
+          :type => 'array'
+
+attribute "ndb/ndbd/private_ips_domainIds",
+          :description => "private_ips to LocationDomainIds for ndb data nodes",
+          :type => 'hash'
+
+attribute "ndb/mysqld/private_ips_domainIds",
+          :description => "private_ips to LocationDomainIds mapping for mysql servers",
+          :type => 'hash'
+
+attribute "ndb/ndbapi/private_ips_domainIds",
+          :description => "LocationDomainIds for ndb api nodes (namenodes)",
+          :type => 'hash'
+
+attribute "ndb/mysql_socket",
+          :description => "Location of the MySQL unix socket",
           :type => "string"
 
-attribute "install/user",
-          :description => "User to install the services as",
-          :type => "string"
-
-attribute "install/upgrade",
-          :description => "User to upgrade the software",
+attribute "ndb/mysql_port",
+          :description => "Port on which the MySQL server binds to",
           :type => "string"
 
 attribute "services/enabled",
           :description => "Default 'false'. Set to 'true' to enable daemon services, so that they are started on a host restart.",
           :type => "string"
 
-# attribute "btsync/ndb/seeder_secret",
-# :display_name => "Ndb seeder's random secret key.",
-# :description => "20 chars or more (normally 32 chars)",
-# :type => 'string',
-# :default => "AY27AAZKTKO3GONE6PBCZZRA6MKGRKBX2"
+attribute "ndb/nvme/disks",
+          :description => "NVMe disks to use for the on disk columns. This configuration overides ndb/diskdata_dir",
+          :type => "array"
 
-# attribute "btsync/ndb/leecher_secret",
-# :display_name => "Ndb leecher's secret key.",
-# :description => "Ndb's random secret (key) generated using the seeder's secret key. 20 chars or more (normally 32 chars)",
-# :type => 'string',
-# :default => "BTHKJKK4PIPIOJZ7GITF2SJ2IYDLSSJVY"
+attribute "ndb/nvme/format",
+          :description => "Default 'false'. Set to 'true' to format the NVMe disks specified in ndb/nvme/disks.",
+          :type => "string"
 
+attribute "ndb/nvme/logfile_size",
+          :description => "Amount of extra disk space to use on the NVMe disks for NDB.",
+          :type => "string"
+
+attribute "ndb/nvme/undofile_size",
+          :description => "Amount of extra disk space to use for log files on the NVMe disks for NDB.",
+          :type => "string"
+
+attribute "ndb/num_ndb_slots_per_client",
+          :description => "Number of NDB connection slots per api node",
+          :type => "string"
+
+attribute "ndb/num_ndb_slots_per_mysqld",
+          :description => "Number of NDB connection slots per mysqld node",
+          :type => "string"
+
+attribute "ndb/num_ndb_open_slots",
+          :description => "Number of slots open for new clients to connect.",
+          :type => "string"
