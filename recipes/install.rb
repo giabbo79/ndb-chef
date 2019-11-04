@@ -2,6 +2,7 @@
 group node['ndb']['group'] do
  action :create
  not_if "getent group #{node['ndb']['group']}"
+ not_if { node['install']['external_users'].casecmp("true") == 0 }
 end
 
 #
@@ -15,12 +16,14 @@ user node['ndb']['user'] do
   shell "/bin/bash"
   system true
   not_if "getent passwd #{node['ndb']['user']}"
+  not_if { node['install']['external_users'].casecmp("true") == 0 }
 end
 
 group node['ndb']['group'] do
   action :modify
   members ["#{node['ndb']['user']}"]
   append true
+  not_if { node['install']['external_users'].casecmp("true") == 0 }
 end
 
 
@@ -80,14 +83,6 @@ directory node['ndb']['BackupDataDir'] do
   mode "750"
   action :create
 end
-
-directory node['ndb']['diskdata_dir'] do
-  owner node['ndb']['user']
-  group node['ndb']['group']
-  mode "750"
-  action :create
-end
-
 
 directory node['mysql']['version_dir'] do
   owner node['ndb']['user']
