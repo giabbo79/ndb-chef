@@ -25,16 +25,16 @@ default['ndb']['user']                                = node['install']['user'].
 default['ndb']['group']                               = node['install']['user'].empty? ? "mysql" : node['install']['user']
 default['ndb']['connectstring']                       = ""
 
-default['ndb']['DataMemory']                          = "98"
+default['ndb']['DataMemory']                          = "512"
 default['ndb']['NoOfReplicas']                        = "1"
 default['ndb']['TcpBind_INADDR_ANY']                  = "FALSE"
 default['ndb']['NoOfFragmentLogParts']                = "4"
-default['ndb']['NoOfFragmentLogFiles']                = "4"
-default['ndb']['FragmentLogFileSize']                 = "64M"
+default['ndb']['NoOfFragmentLogFiles']                = "16"
+default['ndb']['FragmentLogFileSize']                 = "16M"
 default['ndb']['MaxNoOfTables']                       = "4096"
 default['ndb']['MaxNoOfOrderedIndexes']               = "2048"
 default['ndb']['MaxNoOfUniqueHashIndexes']            = "512"
-default['ndb']['MaxNoOfTriggers']                     = "768"
+default['ndb']['MaxNoOfTriggers']                     = "2048"
 default['ndb']['MaxDMLOperationsPerTransaction']      = "4294967295"
 default['ndb']['TransactionBufferMemory']             = "1M"
 default['ndb']['MaxParallelScansPerFragment']         = "256"
@@ -53,17 +53,17 @@ default['ndb']['RealTimeScheduler']                   = "0"
 default['ndb']['CompressedLCP']                       = "0"
 default['ndb']['CompressedBackup']                    = "1"
 default['ndb']['BackupMaxWriteSize']                  = "1M"
-default['ndb']['BackupLogBufferSize']                 = "4M"
+default['ndb']['BackupLogBufferSize']                 = "16M"
 default['ndb']['BackupDataBufferSize']                = "16M"
 default['ndb']['MaxAllocate']                         = "32M"
 default['ndb']['DefaultHashMapSize']                  = "3840"
-default['ndb']['ODirect']                             = "1"
+default['ndb']['ODirect']                             = "0"
 default['ndb']['ExtraSendBufferMemory']               = "0"
 default['ndb']['TotalSendBufferMemory']               = "16M"
 default['ndb']['DiskPageBufferEntries']               = "10"
-default['ndb']['DiskPageBufferMemory']                = "64M"
-default['ndb']['SharedGlobalMemory']                  = "128M"
-default['ndb']['DiskIOThreadPool']                    = "2"
+default['ndb']['DiskPageBufferMemory']                = "512M"
+default['ndb']['SharedGlobalMemory']                  = "512M"
+default['ndb']['DiskIOThreadPool']                    = "8"
 default['ndb']['InitialLogFileGroup=name']            = "LG1; undo_buffer_size=40M; undo1.log:80M;"
 # Move this to another drive to store small files in HopsFS
 default['ndb']['InitialTablespacename']               = "TS1; extent_size=8M; data1.dat:240M;"
@@ -77,9 +77,9 @@ default['ndb']['EnableRedoControl']                   = "1"
 default['ndb']['OverloadLimit']                       = "0"
 # set to several MBs to protect the cluster against misbehaving API nodes that use excess send memory and thus cause failures in communications internally in the NDB kernel.
 default['ndb']['MaxNoOfConcurrentScans']              = "500"
-default['ndb']['MaxNoOfConcurrentIndexOperations']    = "30000"
+default['ndb']['MaxNoOfConcurrentIndexOperations']    = "32000"
 default['ndb']['MaxNoOfConcurrentOperations']         = "200000"
-default['ndb']['MaxNoOfFiredTriggers']                = "4000"
+default['ndb']['MaxNoOfFiredTriggers']                = "10240"
 default['ndb']['MaxNoOfConcurrentTransactions']       = "16192"
 default['ndb']['MaxNoOfAttributes']                   = "5000"
 
@@ -90,9 +90,9 @@ default['ndb']['InsertRecoveryWork']                  = "40"
 
 
 #Optimize for throughput: 0 (range 0..10)
-default['ndb']['SchedulerResponsiveness']             = 0
+default['ndb']['SchedulerResponsiveness']             = 5
 default['ndb']['SchedulerSpinTimer']                  = 0
-default['ndb']['SchedulerExecutionTimer']             = 75
+default['ndb']['SchedulerExecutionTimer']             = 50 
 
 default['ndb']['BuildIndexThreads']                   = "128"
 default['ndb']['TwoPassInitialNodeRestartCopy']       = "true"
@@ -100,7 +100,7 @@ default['ndb']['Numa']                                = 1
 
 
 # Up to 8 execution threads supported
-default['ndb']['MaxNoOfExecutionThreads']             = "2"
+default['ndb']['MaxNoOfExecutionThreads']             = "8"
 # Read up on this option first. Benefits from setting to "true" node['ndb']['interrupts_isolated_to_single_cpu']
 default['ndb']['ThreadConfig']                        = ""
 
