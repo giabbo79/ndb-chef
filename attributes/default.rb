@@ -18,10 +18,12 @@ default['ndb']['bind_cpus']                           = "false"
 
 default['ndb']['mgmd']['port']                        = 1186
 default['ndb']['ndbd']['port']                        = 10000
+default['ndb']['ndbd']['systemctl_timeout_sec']       = 3600
 default['ndb']['ip']                                  = "10.0.2.15"
 
 default['ndb']['loglevel']                            = "notice"
 default['ndb']['user']                                = node['install']['user'].empty? ? "mysql" : node['install']['user']
+default['ndb']['user-home']                           = "/home/#{node['ndb']['user']}"
 default['ndb']['group']                               = node['install']['user'].empty? ? "mysql" : node['install']['user']
 default['ndb']['connectstring']                       = ""
 
@@ -42,7 +44,6 @@ default['ndb']['MaxDiskWriteSpeed']                   = "20M"
 default['ndb']['MaxDiskWriteSpeedOtherNodeRestart']   = "50M"
 default['ndb']['MaxDiskWriteSpeedOwnRestart']         = "200M"
 default['ndb']['MinDiskWriteSpeed']                   = "10M"
-default['ndb']['DiskSyncSize']                        = "4M"
 default['ndb']['RedoBuffer']                          = "32M"
 default['ndb']['LongMessageBuffer']                   = "64M"
 default['ndb']['MaxFKBuildBatchSize']                 = "64"
@@ -65,6 +66,7 @@ default['ndb']['DiskPageBufferMemory']                = "512M"
 default['ndb']['SharedGlobalMemory']                  = "512M"
 default['ndb']['DiskIOThreadPool']                    = "8"
 default['ndb']['InitialLogFileGroup=name']            = "LG1; undo_buffer_size=40M; undo1.log:80M;"
+default['ndb']['DiskSyncSize']                        = "4M"
 # Move this to another drive to store small files in HopsFS
 default['ndb']['InitialTablespacename']               = "TS1; extent_size=8M; data1.dat:240M;"
 
@@ -132,7 +134,7 @@ default['ndb']['nvme']['logfile_size']                = ""
 default['ndb']['nvme']['undofile_size']               = "3000M"
 default['ndb']['nvme']['mount_base_dir']              = "/mnt/nvmeDisks"
 default['ndb']['nvme']['mount_disk_prefix']           = "nvme"
-default['ndb']['nvme']['disks']                       = []
+default['ndb']['nvme']['devices']                     = []
 default['ndb']['nvme']['format']                      = "false"
 
 default['ndb']['BackupDataDir']                       = "#{node['ndb']['root_dir']}/ndb/backups"
@@ -194,9 +196,6 @@ default['mgm']['id']                                  = 49
 default['mysql']['id']                                = 52
 # up to 65 NameNodes
 default['nn']['id']                                   = 190
-
-# The address of the mysqld that will be used by hop
-default['ndb']['mysql_ip']                            = "10.0.2.15"
 
 # IP addresses of the mgm-server, ndbds must be overridden by role/recipe caller.
 default['ndb']['public_ips']                             = ['']

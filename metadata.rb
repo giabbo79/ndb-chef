@@ -4,11 +4,12 @@ maintainer_email "jdowling@kth.se"
 license          "AGPL v3"
 description      "Installs/Configures NDB (MySQL Cluster)"
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
-version          "1.3.0"
+version          "1.4.0"
 source_url       "https://github.com/logicalclocks/ndb-chef"
 issues_url       "https://github.com/logicalclocks/ndb-chef/issues"
 
 depends           "kagent"
+depends           "consul"
 depends           "ulimit"
 
 recipe            "ndb::install", "Installs MySQL Cluster binaries"
@@ -51,6 +52,10 @@ attribute "ndb/user",
 
 attribute "ndb/group",
           :description => "Group that runs ndb database",
+          :type => 'string'
+
+attribute "ndb/user-home",
+          :description => "Home directory of ndb user",
           :type => 'string'
 
 attribute "ndb/BackupDataDir",
@@ -364,6 +369,10 @@ attribute "ndb/ndbd/ips_ids",
           :description =>  "The format should be ['ip1:id1', 'ip2:id2', ...] for the ndbd section in the config.ini file. If no value is supplied, one will be assigned by default.",
           :type => 'array'
 
+attribute "ndb/ndbd/systemctl_timeout_sec",
+          :description =>  "Systemctl start timeout for datanode in seconds",
+          :type => 'string'
+
 attribute "ndb/mysqld/ips_ids",
           :description =>  "The format should be ['ip1:id1', 'ip2:id2', ...] for the mysql section in the config.ini file. If no value is supplied, one will be assigned by default.",
           :type => 'array'
@@ -400,8 +409,8 @@ attribute "services/enabled",
           :description => "Default 'false'. Set to 'true' to enable daemon services, so that they are started on a host restart.",
           :type => "string"
 
-attribute "ndb/nvme/disks",
-          :description => "NVMe disks to use for the on disk columns. This configuration overides ndb/diskdata_dir",
+attribute "ndb/nvme/devices",
+          :description => "Array of strings for NVMe devices (e.g., ['/dev/nvme0n1', '/dev/nvme0n2']) to use for the on on-disk data.",
           :type => "array"
 
 attribute "ndb/nvme/format",

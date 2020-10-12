@@ -108,7 +108,7 @@ template systemd_script do
 end
 
 diskDataDir=node['ndb']['diskdata_dir']
-if !node['ndb']['nvme']['disks'].empty?
+if !node['ndb']['nvme']['devices'].empty?
   diskDataDir="#{node['ndb']['nvme']['mount_base_dir']}/#{node['ndb']['nvme']['mount_disk_prefix']}0/#{node['ndb']['ndb_disk_columns_dir_name']}"
 end
 
@@ -117,7 +117,7 @@ template "#{node['ndb']['root_dir']}/config.ini" do
   owner node['ndb']['user']
   group node['ndb']['group']
   mode 0644
-  action :create_if_missing
+  action :create
   variables({
     :num_ndb_slots_per_client => node['ndb']['num_ndb_slots_per_client'].to_i,
     :num_ndb_slots_per_mysqld => node['ndb']['num_ndb_slots_per_mysqld'].to_i,
