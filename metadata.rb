@@ -4,7 +4,7 @@ maintainer_email "jdowling@kth.se"
 license          "AGPL v3"
 description      "Installs/Configures NDB (MySQL Cluster)"
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
-version          "1.4.0"
+version          "2.0.0"
 source_url       "https://github.com/logicalclocks/ndb-chef"
 issues_url       "https://github.com/logicalclocks/ndb-chef/issues"
 
@@ -126,6 +126,10 @@ attribute "mysql/localhost",
 
 attribute "mysql/replication_enabled",
           :description => "Enable replication for the mysql server",
+          :type => 'string'
+
+attribute "mysql/onlinefs",
+          :description => "Set true to use this MySQL server as online feature store (default: true)",
           :type => 'string'
 
 attribute "mysql/tls",

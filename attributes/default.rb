@@ -1,14 +1,14 @@
 include_attribute "kagent"
 
-version                                               ="7"
-default['ndb']['majorVersion']                        ="6"
-default['ndb']['minorVersion']                        ="9"
+version                                               ="8"
+default['ndb']['majorVersion']                        ="0"
+default['ndb']['minorVersion']                        ="21"
 
 default['ndb']['version']                             = "#{version}.#{node['ndb']['majorVersion']}.#{node['ndb']['minorVersion']}"
 default['ndb']['enabled']                             = "true"
 default['ndb']['glib_version']                        = "2.12"
 
-default['ndb']['url']                                 = node['download_url'] + "/mysql-cluster-gpl-#{node['ndb']['version']}-linux-glibc#{node['ndb']['glib_version']}-x86_64.tar.gz"
+default['ndb']['url']                                 = node['download_url'] + "/mysql-cluster-#{node['ndb']['version']}-linux-glibc#{node['ndb']['glib_version']}-x86_64.tar.gz"
 # checksum is not a security check - used to improve the speed of downloads by skipping if matched
 # checksum calculated using: shasum -a 256 /var/www/hops/...tgz | cut -c-12
 # checksum calculated using: sha256sum /var/www/hops/...tgz | cut -c-12
@@ -85,7 +85,7 @@ default['ndb']['MaxNoOfFiredTriggers']                = "10240"
 default['ndb']['MaxNoOfConcurrentTransactions']       = "16192"
 default['ndb']['MaxNoOfAttributes']                   = "5000"
 
-default['ndb']['MaxReorgBuildBatchSize']              = "64" 
+default['ndb']['MaxReorgBuildBatchSize']              = "64"
 default['ndb']['EnablePartialLcp']                    = "1"
 default['ndb']['RecoveryWork']                        = "60"
 default['ndb']['InsertRecoveryWork']                  = "40"
@@ -94,7 +94,7 @@ default['ndb']['InsertRecoveryWork']                  = "40"
 #Optimize for throughput: 0 (range 0..10)
 default['ndb']['SchedulerResponsiveness']             = 5
 default['ndb']['SchedulerSpinTimer']                  = 0
-default['ndb']['SchedulerExecutionTimer']             = 50 
+default['ndb']['SchedulerExecutionTimer']             = 50
 
 default['ndb']['BuildIndexThreads']                   = "128"
 default['ndb']['TwoPassInitialNodeRestartCopy']       = "true"
@@ -166,6 +166,7 @@ default['ndb']['wait_startup']                        = "10800"
 default['mysql']['dir']                               = node['install']['dir'].empty? ? "/usr/local" : node['install']['dir']
 # Symbolic link to the current versioned mysql directory
 default['mysql']['base_dir']                          = "#{node['mysql']['dir']}/mysql"
+default['mysql']['bin_dir']                           = "#{node['mysql']['base_dir']}/bin"
 # Concrete directory with mysql binaries for a specific mysql version
 default['mysql']['version_dir']                       = "#{node['mysql']['base_dir']}-#{node['ndb']['version']}"
 
@@ -182,6 +183,9 @@ default['mysql']['replication_enabled']               = "false"
 
 # MySQL Server TLS/SSL enabled
 default['mysql']['tls']                               = "false"
+
+# Use this MySQL server as Online FS
+default['mysql']['onlinefs']                          = "true"
 
 # This is the username/password for any mysql server (mysqld) started.
 # It is required by mysql clients to use the mysql server.
@@ -231,7 +235,7 @@ default['ndb']['mgmd']['private_ips_domainIds']          = {}
 default['ndb']['ndbd']['private_ips_domainIds']          = {}
 default['ndb']['mysqld']['private_ips_domainIds']        = {}
 
-# Metrics  
+# Metrics
 default['ndb']['mysqld_exporter']['version']                = "0.11.0"
 default['ndb']['mysqld_exporter']['url']                    = "#{node['download_url']}/prometheus/mysqld_exporter-#{node['ndb']['mysqld_exporter']['version']}.linux-amd64.tar.gz"
 default['ndb']['mysqld_exporter']['home']                   = "#{node['ndb']['dir']}/mysqld_exporter-#{node['ndb']['mysqld_exporter']['version']}.linux-amd64"
