@@ -7,4 +7,3 @@ cookbook 'conda', github: "giabbo79/conda-chef", branch: "1.0"
 
 cookbook 'ulimit', github: "giabbo79/chef-ulimit", branch: "1.0"
 
-cookbook 'ark', '= 5.0.0'
