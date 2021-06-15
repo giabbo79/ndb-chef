@@ -4,11 +4,12 @@ maintainer_email "jdowling@kth.se"
 license          "AGPL v3"
 description      "Installs/Configures NDB (MySQL Cluster)"
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
-version          "1.2.0"
+version          "2.2.0"
 source_url       "https://github.com/logicalclocks/ndb-chef"
 issues_url       "https://github.com/logicalclocks/ndb-chef/issues"
 
 depends           "kagent"
+depends           "consul"
 depends           "ulimit"
 
 recipe            "ndb::install", "Installs MySQL Cluster binaries"
@@ -28,12 +29,32 @@ supports 'centos', ">= 7.0"
 # Required Attributes
 #
 
+attribute "ndb/majorVersion",
+          :description => "RonDB major version",
+          :type => 'string'
+
+attribute "ndb/minorVersion",
+          :description => "RonDB minor version",
+          :type => 'string'
+
+attribute "ndb/patchVersion",
+          :description => "RonDB patch version",
+          :type => 'string'
+
 attribute "ndb/url",
           :description => "Download URL for MySQL Cluster binaries",
           :type => 'string'
 
 attribute "ndb/MaxNoOfExecutionThreads",
           :description => "Number of execution threads for MySQL Cluster",
+          :type => 'string'
+
+attribute "ndb/configuration/type",
+          :description =>  "Control RonDB configuration. auto | manual Default: auto",
+          :type => 'string'
+
+attribute "ndb/configuration/profile",
+          :description =>  "Predefined configurations. unlimited | tiny Default: unlimited",
           :type => 'string'
 
 attribute "ndb/DataMemory",
@@ -51,6 +72,10 @@ attribute "ndb/user",
 
 attribute "ndb/group",
           :description => "Group that runs ndb database",
+          :type => 'string'
+
+attribute "ndb/user-home",
+          :description => "Home directory of ndb user",
           :type => 'string'
 
 attribute "ndb/BackupDataDir",
@@ -121,6 +146,10 @@ attribute "mysql/localhost",
 
 attribute "mysql/replication_enabled",
           :description => "Enable replication for the mysql server",
+          :type => 'string'
+
+attribute "mysql/onlinefs",
+          :description => "Set true to use this MySQL server as online feature store (default: true)",
           :type => 'string'
 
 attribute "mysql/tls",
@@ -287,6 +316,18 @@ attribute "ndb/ODirect",
           :description => "ODirect",
           :type => 'string'
 
+attribute "ndb/SpinMethod",
+          :description => "SpinMethod",
+          :type => 'string'
+
+attribute "ndb/NumCPUs",
+          :description => "If configuration type is set to auto controls how many CPUs will be available to ndbmtd. Default: -1 (use all CPUs)",
+          :type => 'string'
+
+attribute "ndb/TotalMemoryConfig",
+          :description => "This configuration defines the amount of memory used by ndbmtd when AutomaticMemoryConfig is turned on. Minimum is 3G",
+          :type => 'string'
+
 attribute "ndb/TotalSendBufferMemory",
           :description => "TotalSendBufferMemory in MBs",
           :type => 'string'
@@ -364,6 +405,10 @@ attribute "ndb/ndbd/ips_ids",
           :description =>  "The format should be ['ip1:id1', 'ip2:id2', ...] for the ndbd section in the config.ini file. If no value is supplied, one will be assigned by default.",
           :type => 'array'
 
+attribute "ndb/ndbd/systemctl_timeout_sec",
+          :description =>  "Systemctl start timeout for datanode in seconds",
+          :type => 'string'
+
 attribute "ndb/mysqld/ips_ids",
           :description =>  "The format should be ['ip1:id1', 'ip2:id2', ...] for the mysql section in the config.ini file. If no value is supplied, one will be assigned by default.",
           :type => 'array'
@@ -400,8 +445,8 @@ attribute "services/enabled",
           :description => "Default 'false'. Set to 'true' to enable daemon services, so that they are started on a host restart.",
           :type => "string"
 
-attribute "ndb/nvme/disks",
-          :description => "NVMe disks to use for the on disk columns. This configuration overides ndb/diskdata_dir",
+attribute "ndb/nvme/devices",
+          :description => "Array of strings for NVMe devices (e.g., ['/dev/nvme0n1', '/dev/nvme0n2']) to use for the on on-disk data.",
           :type => "array"
 
 attribute "ndb/nvme/format",

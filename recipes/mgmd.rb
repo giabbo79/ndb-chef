@@ -108,8 +108,24 @@ template systemd_script do
 end
 
 diskDataDir=node['ndb']['diskdata_dir']
-if !node['ndb']['nvme']['disks'].empty?
+if !node['ndb']['nvme']['devices'].empty?
   diskDataDir="#{node['ndb']['nvme']['mount_base_dir']}/#{node['ndb']['nvme']['mount_disk_prefix']}0/#{node['ndb']['ndb_disk_columns_dir_name']}"
+end
+
+if conda_helpers.is_upgrade
+  version_series = node['ndb']['version'].split(".")[0]
+  if version_series.to_i < 21 && node['ndb']['configuration']['type'].casecmp?("auto")
+    node.override['ndb']['configuration']['type'] = "manual"
+    Chef::Log.warn "\nUpgrading to NDB #{node['ndb']['version']} but Configuration is set to auto which is not supported. Setting it to manual!\n"
+  end
+end
+
+if node['ndb']['configuration']['type'].casecmp?("auto")
+  if node['ndb']['configuration']['profile'].casecmp?("tiny")
+    node.override['ndb']['TotalMemoryConfig'] = "3G"
+    node.override['ndb']['LockPagesInMainMemory'] = "0"
+    node.override['ndb']['NumCPUs'] = "4"
+  end
 end
 
 template "#{node['ndb']['root_dir']}/config.ini" do
@@ -117,7 +133,7 @@ template "#{node['ndb']['root_dir']}/config.ini" do
   owner node['ndb']['user']
   group node['ndb']['group']
   mode 0644
-  action :create_if_missing
+  action :create
   variables({
     :num_ndb_slots_per_client => node['ndb']['num_ndb_slots_per_client'].to_i,
     :num_ndb_slots_per_mysqld => node['ndb']['num_ndb_slots_per_mysqld'].to_i,
@@ -126,18 +142,22 @@ template "#{node['ndb']['root_dir']}/config.ini" do
   })
 end
 
-if node['kagent']['enabled'] == "true"
-    kagent_config service_name do
-      service "NDB"
-      log_file "#{node['ndb']['log_dir']}/ndb_#{found_id}_out.log"
-      config_file "#{node['ndb']['root_dir']}/config.ini"
-      restart_agent false
-      action :add
-    end
+kagent_config service_name do
+  service "NDB"
+  log_file "#{node['ndb']['log_dir']}/ndb_#{found_id}_out.log"
+  config_file "#{node['ndb']['root_dir']}/config.ini"
+  restart_agent false
+  action :add
 end
 
 kagent_config "#{service_name}" do
   action :systemd_reload
+end
+
+consul_service "Registering RonDB mgm with Consul" do
+  service_definition "consul/mgm-consul.hcl.erb"
+  reload_consul false
+  action :register
 end
 
 # Put public key of this mgmd-host in .ssh/authorized_keys of all ndbd and mysqld nodes

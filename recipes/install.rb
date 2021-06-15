@@ -9,7 +9,7 @@ end
 # Need a managed home account, so that the mgmt server user can ssh to the ndbd nodes to start them.
 #
 user node['ndb']['user'] do
-  home "/home/#{node['ndb']['user']}"
+  home node['ndb']['user-home']
   manage_home true  
   gid node['ndb']['group']
   action :create
@@ -26,6 +26,13 @@ group node['ndb']['group'] do
   not_if { node['install']['external_users'].casecmp("true") == 0 }
 end
 
+group node["kagent"]["certs_group"] do
+  action :manage
+  append true
+  excluded_members node['ndb']['user']
+  not_if { node['install']['external_users'].casecmp("true") == 0 }
+  only_if { conda_helpers.is_upgrade }
+end
 
 directory node['ndb']['dir'] do
   owner node['ndb']['user']

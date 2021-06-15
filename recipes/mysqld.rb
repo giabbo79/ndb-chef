@@ -14,7 +14,6 @@ directory node['ndb']['mysql_server_dir'] do
   action :create
 end
 
-my_ip = my_private_ip()
 found_id=find_service_id("mysqld", node['mysql']['id'])
 
 for script in node['mysql']['scripts']
@@ -60,7 +59,6 @@ service "#{service_name}" do
   action :nothing
 end
 
-mysql_ip = node['mysql']['localhost'] == "true" ? "localhost" : my_ip
 template "#{node['ndb']['root_dir']}/my.cnf" do
   source "my-ndb.cnf.erb"
   owner node['ndb']['user']
@@ -69,7 +67,6 @@ template "#{node['ndb']['root_dir']}/my.cnf" do
   action :create
   variables({
    :mysql_id => found_id,
-   :my_ip => mysql_ip,
    # Here is always false, as this recipe is run before certificates are available
    # if mysql/tls is enabled, the file will be re-templated later
    :mysql_tls => false
@@ -106,7 +103,6 @@ end
 
 ndb_mysql_basic "create_users_grants" do
   action :install_grants
-  my_ip my_ip
 end
 
 # Dont leave the username/passwords to mysql lying around in file in the cache
@@ -116,9 +112,9 @@ file "#{Chef::Config.file_cache_path}/grants.sql" do
 end
 
 nvmeDisksMountPoints="[]"
-if !node['ndb']['nvme']['disks'].empty?
-  nvmeDisks = node['ndb']['nvme']['disks'].each_with_index.map do |e, i|
-    "#{node['ndb']['nvme']['mount_base_dir']}/#{node['ndb']['nvme']['mount_disk_prefix']}#{i}/#{node['ndb']['ndb_disk_columns_dir_name']}"
+if !node['ndb']['nvme']['devices'].empty?
+  nvmeDisks = node['ndb']['nvme']['devices'].each_with_index.map do |e, i|
+     "#{node['ndb']['nvme']['mount_base_dir']}/#{node['ndb']['nvme']['mount_disk_prefix']}#{i}/#{node['ndb']['ndb_disk_columns_dir_name']}"
   end
   nvmeDisksMountPoints = "['#{nvmeDisks.join("', '")}']"
 end
@@ -138,9 +134,6 @@ template "#{node['ndb']['scripts_dir']}/create-disk-table.sh" do
     source "create-disk-table.sh.erb"
     owner node['ndb']['user']
     group node['ndb']['group']
-    variables({
-      :my_ip => my_ip
-    })
     mode 0700
 end
 
@@ -148,25 +141,14 @@ template "#{node['ndb']['scripts_dir']}/drop-disk-table.sh" do
     source "drop-disk-table.sh.erb"
     owner node['ndb']['user']
     group node['ndb']['group']
-    variables({
-      :my_ip => my_ip
-    })
     mode 0700
 end
 
-if node['ndb']['enabled'] == "true"
-  ndb_mysql_ndb "install" do
-   action :install_distributed_privileges
-  end
-end
-
-if node['kagent']['enabled'] == "true"
-  kagent_config service_name do
-    service "NDB" # #{found_id}
-    log_file "#{node['ndb']['log_dir']}/mysql_#{found_id}_out.log"
-    restart_agent false
-    action :add
-  end
+kagent_config service_name do
+  service "NDB" # #{found_id}
+  log_file "#{node['ndb']['log_dir']}/mysql_#{found_id}_out.log"
+  restart_agent false
+  action :add
 end
 
 homedir = node['ndb']['user'].eql?("root") ? "/root" : "/home/#{node['ndb']['user']}"
@@ -185,6 +167,15 @@ end
 
 # Download and install mysqld_exporter
 include_recipe "ndb::mysqld_exporter"
+
+if exists_local('consul', 'master') or exists_local('consul', 'slave')
+  # Register MySQL with Consul
+  consul_service "Registering MySQL with Consul" do
+    service_definition "mysql-consul.hcl.erb"
+    reload_consul false
+    action :register
+  end
+end
 
 if conda_helpers.is_upgrade
   kagent_config "#{service_name}" do
