@@ -184,7 +184,7 @@ default['mysql']['localhost']                         = "false"
 default['mysql']['jdbc_url']                          = ""
 
 #Mysql url consul
-default['ndb']['mysql']['url']                        = "mysql.service.consulmysql.service.consul"
+default['ndb']['mysql']['url']                        = "mysql.service.consul"
 
 # MySQL Server Master-Slave replication binary log is enabled.
 default['mysql']['replication_enabled']               = "false"
