@@ -1,5 +1,22 @@
+group node['logger']['group'] do
+  gid node['logger']['group_id']
+  action :create
+  not_if "getent group #{node['logger']['group']}"
+  not_if { node['install']['external_users'].casecmp("true") == 0 }
+end
+
+user node['logger']['user'] do
+  uid node['logger']['user_id']
+  gid node['logger']['group_id']
+  shell "/bin/nologin"
+  action :create
+  system true
+  not_if "getent passwd #{node['logger']['user']}"
+  not_if { node['install']['external_users'].casecmp("true") == 0 }
+end
 
 group node['ndb']['group'] do
+ gid node['ndb']['group_id']
  action :create
  not_if "getent group #{node['ndb']['group']}"
  not_if { node['install']['external_users'].casecmp("true") == 0 }
@@ -10,7 +27,8 @@ end
 #
 user node['ndb']['user'] do
   home node['ndb']['user-home']
-  manage_home true  
+  manage_home true
+  uid node['ndb']['user_id']
   gid node['ndb']['group']
   action :create
   shell "/bin/bash"
@@ -21,7 +39,7 @@ end
 
 group node['ndb']['group'] do
   action :modify
-  members ["#{node['ndb']['user']}"]
+  members ["#{node['ndb']['user']}", node['logger']['user']]
   append true
   not_if { node['install']['external_users'].casecmp("true") == 0 }
 end
@@ -77,11 +95,45 @@ directory "#{node['ndb']['scripts_dir']}/util" do
   action :create
 end
 
-directory node['ndb']['log_dir'] do
+directory node['data']['dir'] do
+  owner 'root'
+  group 'root'
+  mode '0775'
+  action :create
+  not_if { ::File.directory?(node['data']['dir']) }
+end
+
+directory node['ndb']['data_volume']['root_dir'] do
   owner node['ndb']['user']
   group node['ndb']['group']
   mode "750"
   action :create
+end
+
+directory node['ndb']['data_volume']['log_dir'] do
+  owner node['ndb']['user']
+  group node['ndb']['group']
+  mode "750"
+  action :create
+end
+
+bash 'Move RonDB logs to data volume' do
+  user 'root'
+  code <<-EOH
+    set -e
+    mv -f #{node['ndb']['log_dir']}/* #{node['ndb']['data_volume']['log_dir']}
+    rm -rf #{node['ndb']['log_dir']}
+  EOH
+  only_if { conda_helpers.is_upgrade }
+  only_if { File.directory?(node['ndb']['log_dir'])}
+  not_if { File.symlink?(node['ndb']['log_dir'])}
+end
+
+link node['ndb']['log_dir'] do
+  owner node['ndb']['user']
+  group node['ndb']['group']
+  mode '0750'
+  to node['ndb']['data_volume']['log_dir']
 end
 
 directory node['ndb']['BackupDataDir'] do

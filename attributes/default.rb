@@ -25,8 +25,10 @@ default['ndb']['ip']                                  = "10.0.2.15"
 
 default['ndb']['loglevel']                            = "notice"
 default['ndb']['user']                                = node['install']['user'].empty? ? "mysql" : node['install']['user']
+default['ndb']['user_id']                             = '1519'
 default['ndb']['user-home']                           = "/home/#{node['ndb']['user']}"
 default['ndb']['group']                               = node['install']['user'].empty? ? "mysql" : node['install']['user']
+default['ndb']['group_id']                            = '1514'
 default['ndb']['connectstring']                       = ""
 
 default['ndb']['DataMemory']                          = "512"
@@ -68,10 +70,11 @@ default['ndb']['DiskPageBufferEntries']               = "10"
 default['ndb']['DiskPageBufferMemory']                = "512M"
 default['ndb']['SharedGlobalMemory']                  = "512M"
 default['ndb']['DiskIOThreadPool']                    = "8"
-default['ndb']['InitialLogFileGroup=name']            = "LG1; undo_buffer_size=40M; undo1.log:80M;"
 default['ndb']['DiskSyncSize']                        = "4M"
-# Move this to another drive to store small files in HopsFS
-default['ndb']['InitialTablespacename']               = "TS1; extent_size=8M; data1.dat:240M;"
+# Consult NDB documentation for the format
+# https://dev.mysql.com/doc/refman/8.0/en/mysql-cluster-ndbd-definition.html#ndbparam-ndbd-initiallogfilegroup
+default['ndb']['InitialLogFileGroup']                 = ""
+default['ndb']['InitialTablespace']                   = ""
 
 # From 7.6.7 - no configuration needed for disk write speeds
 # https://mikaelronstrom.blogspot.com/2018/08/more-automated-control-in-mysql-cluster.html
@@ -115,20 +118,27 @@ default['ndb']['NumCPUs']                             = "#{node['ndb']['default'
 
 default['ndb']['interrupts_isolated_to_single_cpu']   = "false"
 
-default['mgm']['scripts']            = %w{ backup-start.sh backup-restore.sh backup-remove.sh enter-singleuser-mode.sh mgm-client.sh mgm-server-start.sh mgm-server-stop.sh mgm-server-restart.sh cluster-shutdown.sh cluster-init.sh cluster-start-with-recovery.sh exit-singleuser-mode.sh }
+default['mgm']['scripts']            = %w{ enter-singleuser-mode.sh mgm-client.sh mgm-server-start.sh mgm-server-stop.sh mgm-server-restart.sh cluster-shutdown.sh cluster-init.sh cluster-start-with-recovery.sh exit-singleuser-mode.sh }
 default['ndb']['scripts']            = %w{ ndbd-start.sh ndbd-init.sh ndbd-stop.sh ndbd-restart.sh }
 default['mysql']['scripts']          = %w{ get-mysql-socket.sh get-mysql-port.sh mysql-server-start.sh mysql-server-stop.sh mysql-server-restart.sh mysql-client.sh }
 
 default['ndb']['dir']                                 = node['install']['dir'].empty? ? "/var/lib" : node['install']['dir']
+
 default['ndb']['root_dir']                            = "#{node['ndb']['dir']}/mysql-cluster"
 default['ndb']['log_dir']                             = "#{node['ndb']['root_dir']}/log"
 default['ndb']['data_dir']                            = "#{node['ndb']['root_dir']}/ndb_data"
 default['ndb']['version_dir']                         = "#{node['ndb']['root_dir']}/ndb-#{node['ndb']['version']}"
 default['ndb']['base_dir']                            = "#{node['ndb']['root_dir']}/ndb"
 
+# Data volume directories
+default['ndb']['data_volume']['root_dir']             = "#{node['data']['dir']}/rondb"
+default['ndb']['data_volume']['log_dir']              = "#{node['ndb']['data_volume']['root_dir']}/log"
+default['ndb']['data_volume']['data_dir']             = "#{node['ndb']['data_volume']['root_dir']}/ndb_data"
+default['ndb']['data_volume']['on_disk_columns']      = "#{node['ndb']['data_volume']['root_dir']}/#{node['ndb']['ndb_disk_columns_dir_name']}"
+default['ndb']['data_volume']['mysql_server_dir']     = "#{node['ndb']['data_volume']['root_dir']}/mysql"
+
 # Small file storage parameters
 
-default['ndb']['InitialLogFileGroup']                 = "undo_buffer_size=128M; "
 # NDB Cluster Disk Data data files and undo log files are placed in the diskdata_dir directory
 default['ndb']['ndb_disk_columns_dir_name']           = "ndb_disk_columns"
 default['ndb']['diskdata_dir']                        = "#{node['ndb']['root_dir']}/#{node['ndb']['ndb_disk_columns_dir_name']}"
@@ -181,8 +191,6 @@ default['ndb']['mysql_socket']                        = "#{node['ndb']['root_dir
 default['ndb']['mysql_port']                          = "3306"
 
 default['mysql']['localhost']                         = "false"
-default['mysql']['jdbc_url']                          = ""
-
 
 # MySQL Server Master-Slave replication binary log is enabled.
 default['mysql']['replication_enabled']               = "false"
@@ -199,6 +207,9 @@ default['mysql']['user']                              = "kthfs"
 default['mysql']['password']                          = "kthfs"
 
 default['mysql']['initialize']                        = "true"
+
+# Number of file descriptor allocated to MySQLd server
+default['mysql']['no_fds']                            = 10000
 
 # Limit the number of mgm_servers to the range 49..51
 default['mgm']['id']                                  = 49

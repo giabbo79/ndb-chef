@@ -4,7 +4,7 @@ maintainer_email "jdowling@kth.se"
 license          "AGPL v3"
 description      "Installs/Configures NDB (MySQL Cluster)"
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
-version          "2.3.0"
+version          "2.4.0"
 source_url       "https://github.com/logicalclocks/ndb-chef"
 issues_url       "https://github.com/logicalclocks/ndb-chef/issues"
 
@@ -70,8 +70,16 @@ attribute "ndb/user",
           :description => "User that runs ndb database",
           :type => 'string'
 
+attribute "ndb/user_id",
+          :description => "ndb user id. Default: 1519",
+          :type => 'string'
+
 attribute "ndb/group",
           :description => "Group that runs ndb database",
+          :type => 'string'
+
+attribute "ndb/group_id",
+          :description => "ndb group id. Default: 1514",
           :type => 'string'
 
 attribute "ndb/user-home",
@@ -106,6 +114,26 @@ attribute "ndb/diskdata_dir",
           :description => "Directory on the NDBD machines where the on-disk columns will be stored. This should be a NVMe disk for best performance.",
           :type => 'string'
 
+attribute "ndb/data_volume/root_dir",
+          :description => "Root RonDB directory in data volume",
+          :type => 'string'
+
+attribute "ndb/data_volume/log_dir",
+          :description => "RonDB log directory in data volume",
+          :type => 'string'
+
+attribute "ndb/data_volume/data_dir",
+          :description => "FileSystemPath RonDB directory in data volume",
+          :type => 'string'
+
+attribute "ndb/data_volume/on_disk_columns",
+          :description => "FileSystemPathDD RonDB directory in data volume",
+          :type => 'string'
+
+attribute "ndb/data_volume/mysql_server_dir",
+          :description => "MySQL server directory in data volume",
+          :type => 'string'
+
 attribute "ndb/DiskPageBufferEntries",
           :description => "Number of page entries (page references) to allocate.",
           :type => 'string'
@@ -134,6 +162,10 @@ attribute "mysql/password",
 
 attribute "mysql/initialize",
           :description => "Initialize the MySQL Servers (Default: true)",
+          :type => "string"
+
+attribute "mysql/no_fds",
+          :description => "Max number of file descriptors allowed to MySQLd (Default: 10000)",
           :type => "string"
 
 attribute "mysql/dir",
@@ -230,6 +262,14 @@ attribute "ndb/MinDiskWriteSpeed",
 
 attribute "ndb/DiskSyncSize",
           :description => "DiskSyncSize",
+          :type => 'string'
+
+attribute "ndb/InitialLogFileGroup",
+          :description => "Log files to create when performing an initial restart",
+          :type => 'string'
+
+attribute "ndb/InitialTablespace",
+          :description => "Table space to create when performing an initial restart",
           :type => 'string'
 
 attribute "ndb/RedoBuffer",
