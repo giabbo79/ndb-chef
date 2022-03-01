@@ -11,11 +11,42 @@ Chef::Log.info "IP address is: #{node['ipaddress']}"
 # On Disk columns
 #
 if node['ndb']['nvme']['devices'].empty?
-  directory node['ndb']['diskdata_dir'] do
+  directory node['ndb']['data_volume']['on_disk_columns'] do
     owner node['ndb']['user']
     group node['ndb']['group']
     mode "750"
+    recursive true
     action :create
+  end
+
+  bash 'Move RonDB on-disk columns to data volume' do
+    user 'root'
+    code <<-EOH
+      set -e
+      mv -f #{node['ndb']['diskdata_dir']}/* #{node['ndb']['data_volume']['on_disk_columns']}
+    EOH
+    only_if { conda_helpers.is_upgrade }
+    only_if { File.directory?(node['ndb']['diskdata_dir'])}
+    not_if { File.symlink?(node['ndb']['diskdata_dir'])}
+    not_if { Dir.empty?(node['ndb']['diskdata_dir'])}
+  end
+
+  bash 'Move RonDB on-disk columns to data volume' do
+    user 'root'
+    code <<-EOH
+      set -e
+      rm -rf #{node['ndb']['diskdata_dir']}
+    EOH
+    only_if { conda_helpers.is_upgrade }
+    only_if { File.directory?(node['ndb']['diskdata_dir'])}
+    not_if { File.symlink?(node['ndb']['diskdata_dir'])}
+  end
+  
+  link node['ndb']['diskdata_dir'] do
+    owner node['ndb']['user']
+    group node['ndb']['group']
+    mode "750"
+    to node['ndb']['data_volume']['on_disk_columns']
   end
 else
   directory "#{node['ndb']['nvme']['mount_base_dir']}" do
@@ -66,11 +97,31 @@ for nvmeDisk in volumes do
   index+=1
 end
 
-directory node['ndb']['data_dir'] do
+directory node['ndb']['data_volume']['data_dir'] do
   owner node['ndb']['user']
   group node['ndb']['group']
   mode "750"
+  recursive true
   action :create
+end
+
+bash 'Move RonDB data to data volume' do
+  user 'root'
+  code <<-EOH
+    set -e
+    mv -f #{node['ndb']['data_dir']}/* #{node['ndb']['data_volume']['data_dir']}
+    rm -rf #{node['ndb']['data_dir']}
+  EOH
+  only_if { conda_helpers.is_upgrade }
+  only_if { File.directory?(node['ndb']['data_dir'])}
+  not_if { File.symlink?(node['ndb']['data_dir'])}
+end
+
+link node['ndb']['data_dir'] do
+  owner node['ndb']['user']
+  group node['ndb']['group']
+  mode "750"
+  to node['ndb']['data_volume']['data_dir']
 end
 
 found_id = find_service_id("ndbd", 1)
@@ -202,7 +253,7 @@ if (node['ndb']['interrupts_isolated_to_single_cpu'] == "true") && (not ::File.e
 
 end
 
-homedir = node['ndb']['user'].eql?("root") ? "/root" : "/home/#{node['ndb']['user']}"
+homedir = node['ndb']['user'].eql?("root") ? "/root" : conda_helpers.get_user_home(node['ndb']['user'])
 
 # Add the mgmd hosts' public key, so that it can start/stop the ndbd on this node using passwordless ssh.
 kagent_keys "#{homedir}" do

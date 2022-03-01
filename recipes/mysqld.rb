@@ -9,11 +9,41 @@ when "rhel"
   package ["libaio", "numactl"] 
 end
 
-directory node['ndb']['mysql_server_dir'] do
+directory node['ndb']['data_volume']['mysql_server_dir'] do
   owner node['ndb']['user']
   group node['ndb']['group']
   mode 0700
   action :create
+  not_if { File.directory?(node['ndb']['data_volume']['mysql_server_dir']) }
+end
+
+bash 'Move MySQL data directory to data volume' do
+  user 'root'
+  code <<-EOH
+    set -e
+    mv -f #{node['ndb']['mysql_server_dir']}/* #{node['ndb']['data_volume']['mysql_server_dir']}
+  EOH
+  only_if { conda_helpers.is_upgrade }
+  only_if { File.directory?(node['ndb']['mysql_server_dir']) }
+  not_if { File.symlink?(node['ndb']['mysql_server_dir']) }
+end
+
+bash 'Delete MySQL data directory' do
+  user 'root'
+  code <<-EOH
+    set -e
+    rm -rf #{node['ndb']['mysql_server_dir']}
+  EOH
+  only_if { conda_helpers.is_upgrade }
+  only_if { File.directory?(node['ndb']['mysql_server_dir'])}
+  not_if { File.symlink?(node['ndb']['mysql_server_dir'])}
+end
+
+link node['ndb']['mysql_server_dir'] do
+  owner node['ndb']['user']
+  group node['ndb']['group']
+  mode 0700
+  to node['ndb']['data_volume']['mysql_server_dir']
 end
 
 found_id=find_service_id("mysqld", node['mysql']['id'])
@@ -88,7 +118,8 @@ bash 'mysql_install_db' do
   cwd node['mysql']['base_dir']
   code <<-EOF
     set -e
-    rm -rf #{node['ndb']['mysql_server_dir']}
+    # Do NOT delete the whole directory as it is a symlink to the data drive
+    rm -rf #{node['ndb']['mysql_server_dir']}/*
 
     ./bin/mysqld --defaults-file=#{node['ndb']['root_dir']}/my.cnf --initialize-insecure --explicit_defaults_for_timestamp
 
@@ -154,7 +185,7 @@ kagent_config service_name do
   action :add
 end
 
-homedir = node['ndb']['user'].eql?("root") ? "/root" : "/home/#{node['ndb']['user']}"
+homedir = node['ndb']['user'].eql?("root") ? "/root" : conda_helpers.get_user_home(node['ndb']['user'])
 kagent_keys "#{homedir}" do
   cb_user "#{node['ndb']['user']}"
   cb_group "#{node['ndb']['group']}"
